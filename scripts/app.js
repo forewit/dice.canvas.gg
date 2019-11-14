@@ -1,125 +1,118 @@
 "use strict";
 
-function dice_initialize() {
+function dice_initialize(container) {
+    $t.remove($t.id('loading_text'));
 
-    var container = $t.id('dice-box');
-    container.style.width = window.innerWidth + 'px';
-    container.style.height = window.innerHeight + 'px';
+    var canvas = $t.id('dice-box');
+    canvas.style.width = window.innerWidth - 1 + 'px';
+    canvas.style.height = window.innerHeight - 1 + 'px';
+    var label = $t.id('info');
+    var set = $t.id('dice-input');
+    var selector_div = $t.id('selector_div');
+    var info_div = $t.id('info_div');
+    on_set_change();
 
     $t.dice.use_true_random = false;
-    $t.dice.scale = 100;
-    //$t.dice.use_shadows = false;
-    //$t.dice.dice_color = '#808080';
-    //$t.dice.label_color = '#202020';
-    //$t.dice.ambient_light_color = 0xff0000;
-    //$t.dice.spot_light_color = 0xefdfd5;
 
-    var box = new $t.dice.dice_box(container, { w: window.innerWidth, h: window.innerHeight });
-    //box.animate_selector = false;
-    
-    function resize () {
-        var w = document.body.clientWidth;
-        var h = document.body.clientHeight;
+    function on_set_change(ev) { set.style.width = set.value.length + 3 + 'ex'; }
+    $t.bind(set, 'keyup', on_set_change);
+    $t.bind(set, 'mousedown', function(ev) { ev.stopPropagation(); });
+    $t.bind(set, 'mouseup', function(ev) { ev.stopPropagation(); });
+    $t.bind(set, 'focus', function(ev) { $t.set(container, { class: '' }); });
+    $t.bind(set, 'blur', function(ev) { $t.set(container, { class: 'noselect' }); });
 
-        container.style.width = w + 'px';
-        container.style.height = h + 'px';
-        box.reinit(container, { w: w, h: h });
+    $t.bind($t.id('clear'), ['mouseup', 'touchend'], function(ev) {
+        ev.stopPropagation();
+        set.value = '0';
+        on_set_change();
+    });
+
+    var params = $t.get_url_params();
+
+    if (params.chromakey) {
+        $t.dice.desk_color = 0x00ff00;
+        info_div.style.display = 'none';
+        $t.id('control_panel').style.display = 'none';
+    }
+    if (params.shadows == 0) {
+        $t.dice.use_shadows = false;
+    }
+    if (params.color == 'white') {
+        $t.dice.dice_color = '#808080';
+        $t.dice.label_color = '#202020';
     }
 
-    $t.bind(window, ['resize', 'orientationchange'], resize);
+    var box = new $t.dice.dice_box(canvas, { w: 500, h: 300 });
+    box.animate_selector = false;
+
+    $t.bind(window, 'resize', function() {
+        canvas.style.width = window.innerWidth - 1 + 'px';
+        canvas.style.height = window.innerHeight - 1 + 'px';
+        box.reinit(canvas, { w: 500, h: 300 });
+    });
+
+    function show_selector() {
+        //info_div.style.display = 'none';
+        //selector_div.style.display = 'inline-block';
+        box.draw_selector();
+    }
 
     function before_roll(vectors, notation, callback) {
-        
+        //info_div.style.display = 'none';
+        //selector_div.style.display = 'none';
         // do here rpc call or whatever to get your own result of throw.
         // then callback with array of your result, example:
         // callback([2, 2, 2, 2]); // for 4d6 where all dice values are 2.
-        callback(notation.result);
+        callback();
+    }
+
+    function notation_getter() {
+        return $t.dice.parse_notation(set.value);
     }
 
     function after_roll(notation, result) {
+        if (params.chromakey || params.noresult) return;
         var res = result.join(' ');
         if (notation.constant) {
             if (notation.constant > 0) res += ' +' + notation.constant;
             else res += ' -' + Math.abs(notation.constant);
         }
-        if (result.length > 1) res += ' = ' +
-            (result.reduce(function (s, a) { return s + a; }) + notation.constant);
-        console.log(res);
+        if (result.length > 1) res += ' = ' + 
+                (result.reduce(function(s, a) { return s + a; }) + notation.constant);
+        label.innerHTML = res;
+        //info_div.style.display = 'inline-block';
     }
 
-    //throw options
-    $t.bind($t.id('d4'), ['pointerup'], function (ev) {
-        ev.stopPropagation();
-        box.rolling = false;
-        box.start_throw(function () {
-            return $t.dice.parse_notation('d4');
-        }, before_roll, after_roll);
-    });
+    //box.bind_mouse(container, notation_getter, before_roll, after_roll);
+    box.bind_throw($t.id('d4'), notation_getter, before_roll, after_roll);
 
-    $t.bind($t.id('d6'), ['pointerup'], function (ev) {
+    /*$t.bind(container, ['mouseup', 'touchend'], function(ev) {
         ev.stopPropagation();
-        box.rolling = false;
-        box.start_throw(function () {
-            return $t.dice.parse_notation('d6');
-        }, before_roll, after_roll);
-    });
-
-    $t.bind($t.id('d8'), ['pointerup'], function (ev) {
-        ev.stopPropagation();
-        box.rolling = false;
-        box.start_throw(function () {
-            return $t.dice.parse_notation('d8');
-        }, before_roll, after_roll);
-    });
-
-    $t.bind($t.id('d10'), ['pointerup'], function (ev) {
-        ev.stopPropagation();
-        box.rolling = false;
-        box.start_throw(function () {
-            return $t.dice.parse_notation('d10');
-        }, before_roll, after_roll);
-    });
-
-    $t.bind($t.id('d12'), ['pointerup'], function (ev) {
-        ev.stopPropagation();
-        box.rolling = false;
-        box.start_throw(function () {
-            return $t.dice.parse_notation('d12');
-        }, before_roll, after_roll);
-    });
-
-    $t.bind($t.id('d20'), ['pointerup'], function (ev) {
-        
-        ev.stopPropagation();
-        box.rolling = false;
-        box.start_throw(function () {
-            return $t.dice.parse_notation('d20');
-        }, before_roll, after_roll);
-    });
-
-    $t.bind($t.id('dice-input'), ['keyup'], function (ev) {
-        if (ev.keyCode == 13) {
-            ev.stopPropagation(); box.rolling = false;
+        if (selector_div.style.display == 'none') {
+            if (!box.rolling) show_selector();
             box.rolling = false;
-            box.start_throw(function () {
-                return $t.dice.parse_notation($t.id('dice-input').value);
-            }, before_roll, after_roll);
+            return;
         }
-    });
+        var name = box.search_dice_by_mouse(ev);
+        if (name != undefined) {
+            var notation = $t.dice.parse_notation(set.value);
+            notation.set.push(name);
+            set.value = $t.dice.stringify_notation(notation);
+            on_set_change();
+        }
+    });*/
 
-    $t.bind($t.id('dice-roll-button'), ['pointerup'], function (ev) {
-        ev.stopPropagation();
-        box.rolling = false;
-        box.start_throw(function () {
-            return $t.dice.parse_notation($t.id('dice-input').value || $t.id('dice-input').placeholder);
-        }, before_roll, after_roll);
-    });
-
-    //box.draw_selector();
-    /*box.bind_mouse(container,function () {
-        return $t.dice.parse_notation($t.id('dice-input').value || $t.id('dice-input').placeholder);
-    }, before_roll, after_roll);*/
+    if (params.notation) {
+        set.value = params.notation;
+    }
+    if (params.roll) {
+        $t.raise_event($t.id('d4'), 'mouseup');
+    }
+    else {
+        show_selector();
+    }
 }
+
 
 function start() {
     //********* Huebee ************/

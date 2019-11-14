@@ -273,14 +273,14 @@
         specular: 0x172022,
         color: 0xf0f0f0,
         shininess: 40,
-        flatShading: true,
+        shading: THREE.FlatShading,
     };
     this.label_color = '#aaaaaa';
     this.dice_color = '#202020';
     this.ambient_light_color = 0xf0f5fb;
     this.spot_light_color = 0xefdfd5;
-    //this.selector_back_colors = { color: 0x404040, shininess: 0, emissive: 0x858787 };
-    //this.desk_color = 0xdfdfdf;
+    this.selector_back_colors = { color: 0x404040, shininess: 0, emissive: 0x858787 };
+    this.desk_color = 0xdfdfdf;
     this.use_shadows = true;
 
     this.known_types = ['d4', 'd6', 'd8', 'd10', 'd12', 'd20', 'd100'];
@@ -293,43 +293,50 @@
 
     this.create_d4 = function() {
         if (!this.d4_geometry) this.d4_geometry = this.create_d4_geometry(this.scale * 1.2);
-        if (!this.d4_material) this.d4_material = this.create_d4_materials(this.scale / 2, this.scale * 2, d4_labels[0]);
+        if (!this.d4_material) this.d4_material = new THREE.MeshFaceMaterial(
+                this.create_d4_materials(this.scale / 2, this.scale * 2, d4_labels[0]));
         return new THREE.Mesh(this.d4_geometry, this.d4_material);
     }
 
     this.create_d6 = function() {
         if (!this.d6_geometry) this.d6_geometry = this.create_d6_geometry(this.scale * 0.9);
-        if (!this.dice_material) this.dice_material = this.create_dice_materials(this.standart_d20_dice_face_labels, this.scale / 2, 1.0);
+        if (!this.dice_material) this.dice_material = new THREE.MeshFaceMaterial(
+                this.create_dice_materials(this.standart_d20_dice_face_labels, this.scale / 2, 1.0));
         return new THREE.Mesh(this.d6_geometry, this.dice_material);
     }
 
     this.create_d8 = function() {
         if (!this.d8_geometry) this.d8_geometry = this.create_d8_geometry(this.scale);
-        if (!this.dice_material) this.dice_material = this.create_dice_materials(this.standart_d20_dice_face_labels, this.scale / 2, 1.2);
+        if (!this.dice_material) this.dice_material = new THREE.MeshFaceMaterial(
+                this.create_dice_materials(this.standart_d20_dice_face_labels, this.scale / 2, 1.2));
         return new THREE.Mesh(this.d8_geometry, this.dice_material);
     }
 
     this.create_d10 = function() {
         if (!this.d10_geometry) this.d10_geometry = this.create_d10_geometry(this.scale * 0.9);
-        if (!this.dice_material) this.dice_material = this.create_dice_materials(this.standart_d20_dice_face_labels, this.scale / 2, 1.0);
+        if (!this.dice_material) this.dice_material = new THREE.MeshFaceMaterial(
+                this.create_dice_materials(this.standart_d20_dice_face_labels, this.scale / 2, 1.0));
         return new THREE.Mesh(this.d10_geometry, this.dice_material);
     }
 
     this.create_d12 = function() {
         if (!this.d12_geometry) this.d12_geometry = this.create_d12_geometry(this.scale * 0.9);
-        if (!this.dice_material) this.dice_material = this.create_dice_materials(this.standart_d20_dice_face_labels, this.scale / 2, 1.0);
+        if (!this.dice_material) this.dice_material = new THREE.MeshFaceMaterial(
+                this.create_dice_materials(this.standart_d20_dice_face_labels, this.scale / 2, 1.0));
         return new THREE.Mesh(this.d12_geometry, this.dice_material);
     }
 
     this.create_d20 = function() {
         if (!this.d20_geometry) this.d20_geometry = this.create_d20_geometry(this.scale);
-        if (!this.dice_material) this.dice_material = this.create_dice_materials(this.standart_d20_dice_face_labels, this.scale / 2, 1.0);
+        if (!this.dice_material) this.dice_material = new THREE.MeshFaceMaterial(
+                this.create_dice_materials(this.standart_d20_dice_face_labels, this.scale / 2, 1.0));
         return new THREE.Mesh(this.d20_geometry, this.dice_material);
     }
 
     this.create_d100 = function() {
         if (!this.d10_geometry) this.d10_geometry = this.create_d10_geometry(this.scale * 0.9);
-        if (!this.d100_material) this.d100_material = this.create_dice_materials(this.standart_d100_dice_face_labels, this.scale / 2, 1.5);
+        if (!this.d100_material) this.d100_material = new THREE.MeshFaceMaterial(
+                this.create_dice_materials(this.standart_d100_dice_face_labels, this.scale / 2, 1.5));
         return new THREE.Mesh(this.d10_geometry, this.d100_material);
     }
 
@@ -375,13 +382,6 @@
     var that = this;
 
     this.dice_box = function(container, dimentions) {
-        if (!WEBGL.isWebGLAvailable()) {
-            var warning = WEBGL.getWebGLErrorMessage();
-            container.appendChild(warning);
-            return;
-        }
-
-
         this.use_adapvite_timestep = true;
         this.animate_selector = true;
 
@@ -390,13 +390,14 @@
         this.world = new CANNON.World();
 
         this.renderer = window.WebGLRenderingContext
-            ? new THREE.WebGLRenderer({ antialias: true, alpha: true })
-            : new THREE.CanvasRenderer({ antialias: true, alpha: true });
+            ? new THREE.WebGLRenderer({ antialias: true })
+            : new THREE.CanvasRenderer({ antialias: true });
         container.appendChild(this.renderer.domElement);
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFShadowMap;
-        this.renderer.setClearColor(0xffffff, 0);
+        this.renderer.setClearColor(0xffffff, 1);
 
+        this.reinit(container, dimentions);
 
         this.world.gravity.set(0, 0, -9.8 * 800);
         this.world.broadphase = new CANNON.NaiveBroadphase();
@@ -416,28 +417,26 @@
                     this.dice_body_material, this.dice_body_material, 0, 0.5));
 
         this.world.add(new CANNON.RigidBody(0, new CANNON.Plane(), desk_body_material));
+        var barrier;
+        barrier = new CANNON.RigidBody(0, new CANNON.Plane(), barrier_body_material);
+        barrier.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI / 2);
+        barrier.position.set(0, this.h * 0.93, 0);
+        this.world.add(barrier);
 
-        that.topBarrier = new CANNON.RigidBody(0, new CANNON.Plane(), barrier_body_material);
-        that.topBarrier.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI / 2);
-        that.topBarrier.position.set(0, this.h * 0.93, 0);
-        this.world.add(that.topBarrier);
+        barrier = new CANNON.RigidBody(0, new CANNON.Plane(), barrier_body_material);
+        barrier.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+        barrier.position.set(0, -this.h * 0.93, 0);
+        this.world.add(barrier);
 
-        that.bottomBarrier = new CANNON.RigidBody(0, new CANNON.Plane(), barrier_body_material);
-        that.bottomBarrier.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
-        that.bottomBarrier.position.set(0, -this.h * 0.93, 0);
-        this.world.add(that.bottomBarrier);
+        barrier = new CANNON.RigidBody(0, new CANNON.Plane(), barrier_body_material);
+        barrier.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), -Math.PI / 2);
+        barrier.position.set(this.w * 0.93, 0, 0);
+        this.world.add(barrier);
 
-        that.rightBarrier = new CANNON.RigidBody(0, new CANNON.Plane(), barrier_body_material);
-        that.rightBarrier.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), -Math.PI / 2);
-        that.rightBarrier.position.set(this.w * 0.93, 0, 0);
-        this.world.add(that.rightBarrier);
-
-        that.leftBarrier = new CANNON.RigidBody(0, new CANNON.Plane(), barrier_body_material);
-        that.leftBarrier.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), Math.PI / 2);
-        that.leftBarrier.position.set(-this.w * 0.93, 0, 0);
-        this.world.add(that.leftBarrier);
-
-        this.reinit(container, dimentions);
+        barrier = new CANNON.RigidBody(0, new CANNON.Plane(), barrier_body_material);
+        barrier.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), Math.PI / 2);
+        barrier.position.set(-this.w * 0.93, 0, 0);
+        this.world.add(barrier);
 
         this.last_time = 0;
         this.running = false;
@@ -445,25 +444,25 @@
         this.renderer.render(this.scene, this.camera);
     }
 
-    this.dice_box.prototype.reinit = function(container, dimensions) {
+    this.dice_box.prototype.reinit = function(container, dimentions) {
         this.cw = container.clientWidth / 2;
         this.ch = container.clientHeight / 2;
-        if (dimensions) {
-            this.w = dimensions.w;
-            this.h = dimensions.h;
+        if (dimentions) {
+            this.w = dimentions.w;
+            this.h = dimentions.h;
         }
         else {
             this.w = this.cw;
             this.h = this.ch;
         }
         this.aspect = Math.min(this.cw / this.w, this.ch / this.h);
-        //that.scale = Math.sqrt(this.w * this.w + this.h * this.h) / 13;
+        that.scale = Math.sqrt(this.w * this.w + this.h * this.h) / 13;
 
         this.renderer.setSize(this.cw * 2, this.ch * 2);
 
         this.wh = this.ch / this.aspect / Math.tan(10 * Math.PI / 180);
         if (this.camera) this.scene.remove(this.camera);
-        this.camera = new THREE.PerspectiveCamera(20, this.w / this.h, 1, this.wh * 1.3);
+        this.camera = new THREE.PerspectiveCamera(20, this.cw / this.ch, 1, this.wh * 1.3);
         this.camera.position.z = this.wh;
 
         var mw = Math.max(this.w, this.h);
@@ -473,30 +472,21 @@
         this.light.target.position.set(0, 0, 0);
         this.light.distance = mw * 5;
         this.light.castShadow = true;
-        this.light.shadow.camera.near = mw / 10;
-        this.light.shadow.camera.far = mw * 5;
-        this.light.shadow.camera.fov = 50;
-        this.light.shadow.bias = 0.001;
-        //this.light.shadowDarkness = 1.1;
-        this.light.shadow.mapSize.width = 2048;
-        this.light.shadow.mapSize.height = 2048;
+        this.light.shadowCameraNear = mw / 10;
+        this.light.shadowCameraFar = mw * 5;
+        this.light.shadowCameraFov = 50;
+        this.light.shadowBias = 0.001;
+        this.light.shadowDarkness = 1.1;
+        this.light.shadowMapWidth = 1024;
+        this.light.shadowMapHeight = 1024;
         this.scene.add(this.light);
 
-        //reset bounding box
-        that.topBarrier.position.set(0, this.h * 0.93, 0);
-        that.bottomBarrier.position.set(0, -this.h * 0.93, 0);
-        that.rightBarrier.position.set(this.w * 0.93, 0, 0);
-        that.leftBarrier.position.set(-this.w * 0.93, 0, 0);
-
-        
         if (this.desk) this.scene.remove(this.desk);
-
         this.desk = new THREE.Mesh(new THREE.PlaneGeometry(this.w * 2, this.h * 2, 1, 1), 
-                new THREE.ShadowMaterial());
+                new THREE.MeshPhongMaterial({ color: that.desk_color }));
         this.desk.receiveShadow = that.use_shadows;
-        this.desk.material.opacity = 0.2;
         this.scene.add(this.desk);
-        
+
         this.renderer.render(this.scene, this.camera);
     }
 
@@ -679,6 +669,8 @@
     function shift_dice_faces(dice, value, res) {
         var r = that.dice_face_range[dice.dice_type];
         if (dice.dice_type == 'd10' && value == 10) value = 0;
+        if (dice.dice_type == 'd10' && res == 10) res = 0;
+        if (dice.dice_type == 'd100') res /= 10;
         if (!(value >= r[0] && value <= r[1])) return;
         var num = value - res;
         var geom = dice.geometry.clone();
@@ -692,7 +684,8 @@
         }
         if (dice.dice_type == 'd4' && num != 0) {
             if (num < 0) num += 4;
-            dice.material = that.create_d4_materials(that.scale / 2, that.scale * 2, d4_labels[num]);
+            dice.material = new THREE.MeshFaceMaterial(
+                    that.create_d4_materials(that.scale / 2, that.scale * 2, d4_labels[num]));
         }
         dice.geometry = geom;
     }
@@ -734,9 +727,6 @@
 
     this.dice_box.prototype.search_dice_by_mouse = function(ev) {
         var m = $t.get_mouse_coords(ev);
-        var rect = canvas.getBoundingClientRect();
-        m.x -= rect.left;
-        m.y -= rect.top;
         var intersects = (new THREE.Raycaster(this.camera.position, 
                     (new THREE.Vector3((m.x - this.cw) / this.aspect,
                                        1 - (m.y - this.ch) / this.aspect, this.w / 9))
@@ -747,15 +737,13 @@
     this.dice_box.prototype.draw_selector = function() {
         this.clear();
         var step = this.w / 4.5;
-
-        /*
         this.pane = new THREE.Mesh(new THREE.PlaneGeometry(this.w * 6, this.h * 6, 1, 1), 
                 new THREE.MeshPhongMaterial(that.selector_back_colors));
         this.pane.receiveShadow = true;
         this.pane.position.set(0, 0, 1);
         this.scene.add(this.pane);
-        */
-        //var mouse_captured = false;
+
+        var mouse_captured = false;
 
         for (var i = 0, pos = -3; i < that.known_types.length; ++i, ++pos) {
             var dice = $t.dice['create_' + that.known_types[i]]();
@@ -798,7 +786,7 @@
             ev.preventDefault();
             box.mouse_time = (new Date()).getTime();
             box.mouse_start = $t.get_mouse_coords(ev);
-        }, {passive: false});
+        });
         $t.bind(container, ['mouseup', 'touchend'], function(ev) {
             if (box.rolling) return;
             if (box.mouse_start == undefined) return;
@@ -837,3 +825,4 @@
     }
 
 }).apply(teal.dice = teal.dice || {});
+
